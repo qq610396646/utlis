@@ -24,13 +24,13 @@ def main():
 	if NEWDB:
 		filestructs+["db"]
 
-	packagesstucts=["bin","lib","utils","tests"]
+	packagesstucts=["bin","lib","utils","tests","src"]
 	original_files=["requirement.txt","README.md","main.py","setup.py"]
 	path=os.getcwd()
 
 	for file in filestructs:
 		new_dirtory(path,file)
-	for packages in filestructs:
+	for packages in packagesstucts:
 		new_python_package(packages)
 	for orgfile in original_files:
 		new_python_file(path,orgfile)
