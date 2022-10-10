@@ -1,0 +1,34 @@
+# 选择python:3.7-slim镜像，slim镜像体积较小，打包出来的镜像也相对较小
+FROM python:3.7-slim
+WORKDIR /opt
+COPY . /opt
+
+RUN cp /etc/apt/sources.list /etc/apt/sources.list.bak \
+    # 更换apt源为华为源
+    && sed -i -r 's/(deb.debian.org|security.debian.org)/repo.huaweicloud.com/g' /etc/apt/sources.list \
+    # 设置pip源为豆瓣源
+    && pip3 config set --global global.index-url https://pypi.doubanio.com/simple \
+    && apt-get update \
+    # 安装依赖软件包，比如编译安装uwsgi需要有gcc
+    && apt-get install -y gcc libgl1-mesa-glx libgomp1 libglib2.0-0 hub \
+    # 安装python依赖，并且不用保存缓存文件
+    && pip3 install --no-cache-dir -r /opt/requirements.txt \
+    && hub install emotion_detection_textcnn==1.1.0 \
+    && hub install lac==2.1.1 \
+    && chmod +x /opt/app.sh \
+    # 删除不需要的软件包，比如上面编译安装python依赖时需要的gcc，编译安装好以后就不需要了
+    && apt-get purge -y gcc \
+    # 删除其他未被使用的不需要的依赖软件包
+    && apt-get autoremove -y \
+    # 删除apt安装软件的产生的缓存
+    && apt-get clean \
+    && mv paddlehub /root/.paddlehub
+
+# 定义一个服务端口的环境变量，后续可以覆盖这个变量
+ENV SERVICE_PORT 5000
+EXPOSE $SERVICE_PORT
+
+# 运行健康检查脚本，成功返回0，不成功退出并返回1
+HEALTHCHECK CMD python3 docker_check.py || exit 1
+
+CMD ["/opt/app.sh"]
